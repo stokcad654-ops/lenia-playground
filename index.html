@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lenia Playground — Continuous Cellular Automata</title>
+    <meta name="description" content="Interactive browser-based Lenia simulator. Watch artificial life emerge from mathematics.">
+    <meta property="og:title" content="Lenia Playground">
+    <meta property="og:description" content="Watch artificial life emerge from math. Interactive continuous cellular automaton in your browser.">
+    <meta property="og:type" content="website">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧫</text></svg>">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="header-left">
+                <h1>Lenia <span class="accent">Playground</span></h1>
+                <span class="subtitle">continuous cellular automata</span>
+            </div>
+            <div class="header-right">
+                <span id="fps-counter" class="fps">-- fps</span>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="canvas-container">
+                <canvas id="canvas" width="512" height="512"></canvas>
+                <div class="canvas-overlay" id="canvas-hint">click or drag to seed life</div>
+            </div>
+
+            <aside class="panel">
+                <section class="panel-section">
+                    <h3>Presets</h3>
+                    <div id="preset-buttons" class="preset-grid"></div>
+                </section>
+
+                <section class="panel-section">
+                    <h3>Parameters</h3>
+                    <div class="slider-group">
+                        <div class="slider-row">
+                            <span class="slider-label">Radius (R)</span>
+                            <span class="slider-value" id="val-R">13</span>
+                        </div>
+                        <input type="range" id="slider-R" min="5" max="28" step="1" value="13">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-row">
+                            <span class="slider-label">Growth center (&mu;)</span>
+                            <span class="slider-value" id="val-mu">0.150</span>
+                        </div>
+                        <input type="range" id="slider-mu" min="0.01" max="0.50" step="0.005" value="0.15">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-row">
+                            <span class="slider-label">Growth width (&sigma;)</span>
+                            <span class="slider-value" id="val-sigma">0.017</span>
+                        </div>
+                        <input type="range" id="slider-sigma" min="0.001" max="0.10" step="0.001" value="0.017">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-row">
+                            <span class="slider-label">Time step (dt)</span>
+                            <span class="slider-value" id="val-dt">0.100</span>
+                        </div>
+                        <input type="range" id="slider-dt" min="0.01" max="0.20" step="0.005" value="0.10">
+                    </div>
+                </section>
+
+                <section class="panel-section">
+                    <h3>Actions</h3>
+                    <div class="action-grid">
+                        <button id="btn-play" class="btn btn-primary" title="Play / Pause">
+                            <span id="play-icon">&#9654;</span> Play
+                        </button>
+                        <button id="btn-step" class="btn" title="Single step">&#9197; Step</button>
+                        <button id="btn-clear" class="btn" title="Clear canvas">Clear</button>
+                        <button id="btn-random" class="btn" title="Random seed">Random</button>
+                    </div>
+                </section>
+
+                <section class="panel-section">
+                    <h3>Colormap</h3>
+                    <div class="colormap-row" id="colormap-buttons"></div>
+                </section>
+
+                <section class="panel-section panel-footer">
+                    <p class="credit">
+                        Based on <a href="https://arxiv.org/abs/1812.05433" target="_blank" rel="noopener">Lenia</a> by Bert Chan.
+                        Built by <a href="https://memess2001.github.io" target="_blank" rel="noopener">Hong Zhe</a>.
+                    </p>
+                </section>
+            </aside>
+        </main>
+    </div>
+
+    <script src="engine.js"></script>
+    <script src="presets.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
