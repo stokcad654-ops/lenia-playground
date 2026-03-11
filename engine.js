@@ -7,17 +7,13 @@ in vec2 aPos;
 void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
 `;
 
+/* Standard Lenia: 1-pass convolution + growth + update */
 const SIM_FRAG = `#version 300 es
 precision highp float;
 
 uniform sampler2D uState;
 uniform vec2 uRes;
-uniform float uR;
-uniform float uMu;
-uniform float uSigma;
-uniform float uDt;
-uniform float uKMu;
-uniform float uKSigma;
+uniform float uR, uMu, uSigma, uDt, uKMu, uKSigma;
 
 out vec4 fragColor;
 
@@ -30,25 +26,113 @@ void main() {
     vec2 uv = gl_FragCoord.xy / uRes;
     float cur = texture(uState, uv).r;
 
-    float total = 0.0;
-    float ksum  = 0.0;
+    float total = 0.0, ksum = 0.0;
     int iR = int(ceil(uR));
 
     for (int dy = -iR; dy <= iR; dy++) {
         for (int dx = -iR; dx <= iR; dx++) {
             float r = length(vec2(float(dx), float(dy))) / uR;
             if (r > 1.0) continue;
-
             float k = bell(r, uKMu, uKSigma);
-            vec2 sampleUV = fract((gl_FragCoord.xy + vec2(float(dx), float(dy))) / uRes);
-            total += texture(uState, sampleUV).r * k;
+            vec2 sUV = fract((gl_FragCoord.xy + vec2(float(dx), float(dy))) / uRes);
+            total += texture(uState, sUV).r * k;
             ksum  += k;
         }
     }
 
     float U = total / max(ksum, 1e-10);
     float G = 2.0 * bell(U, uMu, uSigma) - 1.0;
-    float next = clamp(cur + uDt * G, 0.0, 1.0);
+    fragColor = vec4(clamp(cur + uDt * G, 0.0, 1.0), 0.0, 0.0, 1.0);
+}
+`;
+
+/* Flow Lenia Pass 1: convolution → growth field G */
+const FLOW_GROWTH_FRAG = `#version 300 es
+precision highp float;
+
+uniform sampler2D uState;
+uniform vec2 uRes;
+uniform float uR, uMu, uSigma, uKMu, uKSigma;
+
+out vec4 fragColor;
+
+float bell(float x, float m, float s) {
+    float d = (x - m) / s;
+    return exp(-0.5 * d * d);
+}
+
+void main() {
+    vec2 uv = gl_FragCoord.xy / uRes;
+
+    float total = 0.0, ksum = 0.0;
+    int iR = int(ceil(uR));
+
+    for (int dy = -iR; dy <= iR; dy++) {
+        for (int dx = -iR; dx <= iR; dx++) {
+            float r = length(vec2(float(dx), float(dy))) / uR;
+            if (r > 1.0) continue;
+            float k = bell(r, uKMu, uKSigma);
+            vec2 sUV = fract((gl_FragCoord.xy + vec2(float(dx), float(dy))) / uRes);
+            total += texture(uState, sUV).r * k;
+            ksum  += k;
+        }
+    }
+
+    float U = total / max(ksum, 1e-10);
+    float G = 2.0 * bell(U, uMu, uSigma) - 1.0;
+
+    // R = growth field, G = potential field U
+    fragColor = vec4(G, U, 0.0, 1.0);
+}
+`;
+
+/* Flow Lenia Pass 2: Eulerian mass redistribution + growth update
+   Update: A_new = clamp(A + dt*G + dt*α*∇·(A·∇G), 0, 1)
+   ∇·(A·∇G) = A·∇²G + ∇A·∇G  (product rule for divergence)        */
+const FLOW_ADVECT_FRAG = `#version 300 es
+precision highp float;
+
+uniform sampler2D uState;
+uniform sampler2D uGrowthTex;
+uniform vec2 uRes;
+uniform float uDt;
+uniform float uFlowRate;
+
+out vec4 fragColor;
+
+void main() {
+    vec2 uv = gl_FragCoord.xy / uRes;
+    vec2 px = 1.0 / uRes;
+
+    float A = texture(uState, uv).r;
+    float G = texture(uGrowthTex, uv).r;
+
+    // Neighbor samples of growth field
+    float gR = texture(uGrowthTex, fract(uv + vec2(px.x, 0.0))).r;
+    float gL = texture(uGrowthTex, fract(uv - vec2(px.x, 0.0))).r;
+    float gU = texture(uGrowthTex, fract(uv + vec2(0.0, px.y))).r;
+    float gD = texture(uGrowthTex, fract(uv - vec2(0.0, px.y))).r;
+
+    // Gradient of G (central difference, per pixel)
+    vec2 gradG = vec2(gR - gL, gU - gD) * 0.5;
+
+    // Laplacian of G (discrete, per pixel²)
+    float lapG = gR + gL + gU + gD - 4.0 * G;
+
+    // Neighbor samples of state
+    float aR = texture(uState, fract(uv + vec2(px.x, 0.0))).r;
+    float aL = texture(uState, fract(uv - vec2(px.x, 0.0))).r;
+    float aU = texture(uState, fract(uv + vec2(0.0, px.y))).r;
+    float aD = texture(uState, fract(uv - vec2(0.0, px.y))).r;
+
+    // Gradient of A (central difference, per pixel)
+    vec2 gradA = vec2(aR - aL, aU - aD) * 0.5;
+
+    // Flow: ∇·(A·∇G) = A·∇²G + ∇A·∇G
+    float flow = A * lapG + dot(gradA, gradG);
+
+    // Update: standard growth + flow redistribution
+    float next = clamp(A + uDt * G + uDt * uFlowRate * flow, 0.0, 1.0);
 
     fragColor = vec4(next, 0.0, 0.0, 1.0);
 }
@@ -102,13 +186,11 @@ vec3 cmToxic(float t) {
 void main() {
     vec2 uv = gl_FragCoord.xy / uRes;
     float v = clamp(texture(uState, uv).r, 0.0, 1.0);
-
     vec3 color;
     if      (uColormap == 0) color = cmOcean(v);
     else if (uColormap == 1) color = cmEmber(v);
     else if (uColormap == 2) color = cmToxic(v);
     else                     color = vec3(v);
-
     fragColor = vec4(color, 1.0);
 }
 `;
@@ -127,13 +209,10 @@ out vec4 fragColor;
 void main() {
     vec2 uv = gl_FragCoord.xy / uRes;
     float cur = texture(uState, uv).r;
-
     vec2 diff = uv - uSeedPos;
-    // Toroidal wrap
     diff -= round(diff);
     float dist = length(diff);
     float blob = uSeedValue * exp(-dist * dist / (2.0 * uSeedRadius * uSeedRadius));
-
     fragColor = vec4(clamp(cur + blob, 0.0, 1.0), 0.0, 0.0, 1.0);
 }
 `;
@@ -154,10 +233,10 @@ class LeniaEngine {
         this.colormapIndex = 0;
         this.stepCount = 0;
 
-        // Default Lenia parameters
         this.params = {
             R: 13, mu: 0.15, sigma: 0.017, dt: 0.1,
             kernelMu: 0.5, kernelSigma: 0.15,
+            flowRate: 0,   // 0 = standard Lenia, >0 = Flow Lenia
         };
 
         this._initGL();
@@ -174,11 +253,13 @@ class LeniaEngine {
 
         this.gl = gl;
 
-        // Compile shader programs
-        this.simProg    = this._prog(VERT_SRC, SIM_FRAG);
-        this.renderProg = this._prog(VERT_SRC, RENDER_FRAG);
-        this.seedProg   = this._prog(VERT_SRC, SEED_FRAG);
-        this.clearProg  = this._prog(VERT_SRC, CLEAR_FRAG);
+        // Compile all shader programs
+        this.simProg        = this._prog(VERT_SRC, SIM_FRAG);
+        this.flowGrowthProg = this._prog(VERT_SRC, FLOW_GROWTH_FRAG);
+        this.flowAdvectProg = this._prog(VERT_SRC, FLOW_ADVECT_FRAG);
+        this.renderProg     = this._prog(VERT_SRC, RENDER_FRAG);
+        this.seedProg       = this._prog(VERT_SRC, SEED_FRAG);
+        this.clearProg      = this._prog(VERT_SRC, CLEAR_FRAG);
 
         // Cache uniform locations
         this.u = {
@@ -191,6 +272,22 @@ class LeniaEngine {
                 dt:    gl.getUniformLocation(this.simProg, 'uDt'),
                 kmu:   gl.getUniformLocation(this.simProg, 'uKMu'),
                 ksig:  gl.getUniformLocation(this.simProg, 'uKSigma'),
+            },
+            fg: {
+                state: gl.getUniformLocation(this.flowGrowthProg, 'uState'),
+                res:   gl.getUniformLocation(this.flowGrowthProg, 'uRes'),
+                R:     gl.getUniformLocation(this.flowGrowthProg, 'uR'),
+                mu:    gl.getUniformLocation(this.flowGrowthProg, 'uMu'),
+                sigma: gl.getUniformLocation(this.flowGrowthProg, 'uSigma'),
+                kmu:   gl.getUniformLocation(this.flowGrowthProg, 'uKMu'),
+                ksig:  gl.getUniformLocation(this.flowGrowthProg, 'uKSigma'),
+            },
+            fa: {
+                state:   gl.getUniformLocation(this.flowAdvectProg, 'uState'),
+                growth:  gl.getUniformLocation(this.flowAdvectProg, 'uGrowthTex'),
+                res:     gl.getUniformLocation(this.flowAdvectProg, 'uRes'),
+                dt:      gl.getUniformLocation(this.flowAdvectProg, 'uDt'),
+                flow:    gl.getUniformLocation(this.flowAdvectProg, 'uFlowRate'),
             },
             render: {
                 state: gl.getUniformLocation(this.renderProg, 'uState'),
@@ -212,8 +309,8 @@ class LeniaEngine {
         const buf = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buf);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
-        // Bind aPos in all programs
-        [this.simProg, this.renderProg, this.seedProg, this.clearProg].forEach(prog => {
+        [this.simProg, this.flowGrowthProg, this.flowAdvectProg,
+         this.renderProg, this.seedProg, this.clearProg].forEach(prog => {
             const loc = gl.getAttribLocation(prog, 'aPos');
             if (loc >= 0) {
                 gl.enableVertexAttribArray(loc);
@@ -222,34 +319,40 @@ class LeniaEngine {
         });
         this.vao = vao;
 
-        // Create ping-pong framebuffers
+        // Helper to create a float texture + framebuffer
+        const makeFB = () => {
+            const tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F,
+                this.gridSize, this.gridSize, 0, gl.RGBA, gl.FLOAT, null);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+            const fb = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+            if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+                throw new Error('Framebuffer incomplete');
+            }
+            return { tex, fb };
+        };
+
+        // Ping-pong state buffers (2)
         this.textures = [];
         this.framebuffers = [];
         this.currentTex = 0;
 
         for (let i = 0; i < 2; i++) {
-            const tex = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, tex);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F,
-                this.gridSize, this.gridSize, 0,
-                gl.RGBA, gl.FLOAT, null);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-
-            const fb = gl.createFramebuffer();
-            gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-
-            const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-            if (status !== gl.FRAMEBUFFER_COMPLETE) {
-                throw new Error(`Framebuffer incomplete: ${status}`);
-            }
-
+            const { tex, fb } = makeFB();
             this.textures.push(tex);
             this.framebuffers.push(fb);
         }
+
+        // Growth field buffer (for Flow Lenia pass 1 output)
+        const g = makeFB();
+        this.growthTex = g.tex;
+        this.growthFB  = g.fb;
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
@@ -282,6 +385,15 @@ class LeniaEngine {
     /* ── Simulation ──────────────────────────────────────── */
 
     step() {
+        if (this.params.flowRate > 0) {
+            this._stepFlow();
+        } else {
+            this._stepStandard();
+        }
+        this.stepCount++;
+    }
+
+    _stepStandard() {
         const gl = this.gl;
         const p = this.params;
         const src = this.currentTex;
@@ -306,7 +418,55 @@ class LeniaEngine {
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
         this.currentTex = dst;
-        this.stepCount++;
+    }
+
+    _stepFlow() {
+        const gl = this.gl;
+        const p = this.params;
+        const src = this.currentTex;
+        const dst = 1 - src;
+        const gs  = this.gridSize;
+
+        /* ── Pass 1: convolution → growth texture ────────── */
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.growthFB);
+        gl.viewport(0, 0, gs, gs);
+
+        gl.useProgram(this.flowGrowthProg);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this.textures[src]);
+        gl.uniform1i(this.u.fg.state, 0);
+        gl.uniform2f(this.u.fg.res, gs, gs);
+        gl.uniform1f(this.u.fg.R,     p.R);
+        gl.uniform1f(this.u.fg.mu,    p.mu);
+        gl.uniform1f(this.u.fg.sigma, p.sigma);
+        gl.uniform1f(this.u.fg.kmu,   p.kernelMu);
+        gl.uniform1f(this.u.fg.ksig,  p.kernelSigma);
+
+        gl.bindVertexArray(this.vao);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+        /* ── Pass 2: gradient + advection + update ───────── */
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffers[dst]);
+        gl.viewport(0, 0, gs, gs);
+
+        gl.useProgram(this.flowAdvectProg);
+        // Texture unit 0 = current state
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this.textures[src]);
+        gl.uniform1i(this.u.fa.state, 0);
+        // Texture unit 1 = growth field
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, this.growthTex);
+        gl.uniform1i(this.u.fa.growth, 1);
+
+        gl.uniform2f(this.u.fa.res, gs, gs);
+        gl.uniform1f(this.u.fa.dt,   p.dt);
+        gl.uniform1f(this.u.fa.flow, p.flowRate);
+
+        gl.bindVertexArray(this.vao);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+        this.currentTex = dst;
     }
 
     render() {
@@ -352,7 +512,6 @@ class LeniaEngine {
     }
 
     seedPattern(data, centerX, centerY, patternSize) {
-        // data: 2D array [rows][cols] of float [0,1]
         const gl = this.gl;
         const rows = data.length;
         const cols = data[0].length;
@@ -379,15 +538,12 @@ class LeniaEngine {
             }
         }
 
-        // Upload directly (no readPixels — assumes canvas was just cleared)
         gl.bindTexture(gl.TEXTURE_2D, this.textures[this.currentTex]);
         gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0,
-            this.gridSize, this.gridSize,
-            gl.RGBA, gl.FLOAT, px);
+            this.gridSize, this.gridSize, gl.RGBA, gl.FLOAT, px);
     }
 
     seedBlobs(blobs) {
-        // blobs: [{x, y, r, v}, ...]  — normalized coords [0,1]
         for (const b of blobs) {
             this.seedAt(b.x, b.y, b.r, b.v);
         }
@@ -412,17 +568,12 @@ class LeniaEngine {
     randomize(density, patchSize) {
         density   = density   || 0.25;
         patchSize = patchSize || 0.04;
-
         this.clear();
-
-        // Seed random blobs
         const count = Math.floor(density * 200);
         for (let i = 0; i < count; i++) {
-            const x = Math.random();
-            const y = Math.random();
-            const r = patchSize * (0.5 + Math.random());
-            const v = 0.3 + Math.random() * 0.7;
-            this.seedAt(x, y, r, v);
+            this.seedAt(Math.random(), Math.random(),
+                patchSize * (0.5 + Math.random()),
+                0.3 + Math.random() * 0.7);
         }
     }
 

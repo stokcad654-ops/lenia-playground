@@ -54,10 +54,11 @@
     /* ── Slider Bindings ─────────────────────────────────── */
 
     const sliders = {
-        R:     { el: document.getElementById('slider-R'),     val: document.getElementById('val-R'),     fmt: v => v },
-        mu:    { el: document.getElementById('slider-mu'),    val: document.getElementById('val-mu'),    fmt: v => parseFloat(v).toFixed(3) },
-        sigma: { el: document.getElementById('slider-sigma'), val: document.getElementById('val-sigma'), fmt: v => parseFloat(v).toFixed(3) },
-        dt:    { el: document.getElementById('slider-dt'),    val: document.getElementById('val-dt'),    fmt: v => parseFloat(v).toFixed(3) },
+        R:        { el: document.getElementById('slider-R'),        val: document.getElementById('val-R'),        fmt: v => v },
+        mu:       { el: document.getElementById('slider-mu'),       val: document.getElementById('val-mu'),       fmt: v => parseFloat(v).toFixed(3) },
+        sigma:    { el: document.getElementById('slider-sigma'),    val: document.getElementById('val-sigma'),    fmt: v => parseFloat(v).toFixed(3) },
+        dt:       { el: document.getElementById('slider-dt'),       val: document.getElementById('val-dt'),       fmt: v => parseFloat(v).toFixed(3) },
+        flowRate: { el: document.getElementById('slider-flowRate'), val: document.getElementById('val-flowRate'), fmt: v => parseFloat(v).toFixed(1) },
     };
 
     Object.keys(sliders).forEach(key => {
@@ -71,10 +72,11 @@
     });
 
     function syncSlidersToParams(params) {
-        if (params.R     !== undefined) { sliders.R.el.value     = params.R;     sliders.R.val.textContent     = sliders.R.fmt(params.R); }
-        if (params.mu    !== undefined) { sliders.mu.el.value    = params.mu;    sliders.mu.val.textContent    = sliders.mu.fmt(params.mu); }
-        if (params.sigma !== undefined) { sliders.sigma.el.value = params.sigma; sliders.sigma.val.textContent = sliders.sigma.fmt(params.sigma); }
-        if (params.dt    !== undefined) { sliders.dt.el.value    = params.dt;    sliders.dt.val.textContent    = sliders.dt.fmt(params.dt); }
+        if (params.R        !== undefined) { sliders.R.el.value        = params.R;        sliders.R.val.textContent        = sliders.R.fmt(params.R); }
+        if (params.mu       !== undefined) { sliders.mu.el.value       = params.mu;       sliders.mu.val.textContent       = sliders.mu.fmt(params.mu); }
+        if (params.sigma    !== undefined) { sliders.sigma.el.value    = params.sigma;    sliders.sigma.val.textContent    = sliders.sigma.fmt(params.sigma); }
+        if (params.dt       !== undefined) { sliders.dt.el.value       = params.dt;       sliders.dt.val.textContent       = sliders.dt.fmt(params.dt); }
+        if (params.flowRate !== undefined) { sliders.flowRate.el.value = params.flowRate; sliders.flowRate.val.textContent = sliders.flowRate.fmt(params.flowRate); }
     }
 
     /* ── Actions ─────────────────────────────────────────── */
